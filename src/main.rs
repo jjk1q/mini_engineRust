@@ -6,7 +6,7 @@ use winit::application::ApplicationHandler;
 use winit::event::ElementState;
 use winit::event::WindowEvent::{self, KeyboardInput, RedrawRequested};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
-use winit::keyboard::{Key, NamedKey};
+use winit::keyboard::{Key, KeyCode, NamedKey, PhysicalKey};
 use winit::window::{Window, WindowId};
 use winit::dpi::LogicalSize;
 
@@ -52,6 +52,13 @@ impl ApplicationHandler for App{
                     if key_event.logical_key == Key::Named(NamedKey::Escape){
                         event_loop.exit();
                     }
+                    else if key_event.physical_key == PhysicalKey::Code(KeyCode::KeyC){
+                        self.clear_color = rand::random::<u32>() & 0x00FFFFFF;
+                        let window = self.window.as_ref();
+                        if let Some(window) = window{
+                            window.request_redraw();
+                        }
+                    }
                     else {
                         println!("{:?}", key_event.logical_key);
                     }
@@ -70,7 +77,7 @@ impl ApplicationHandler for App{
                         for pixel in buffer.iter_mut(){
                             *pixel = self.clear_color;  
                         }
-                        buffer.present().expect("...");
+                        buffer.present().expect("..."); 
                     }
                 }
             },
