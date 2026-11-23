@@ -1,9 +1,10 @@
+use std::num::NonZeroU32;
 use std::rc::Rc;
 
 use softbuffer::{Context, Surface};
 use winit::application::ApplicationHandler;
 use winit::event::ElementState;
-use winit::event::WindowEvent::{self, KeyboardInput};
+use winit::event::WindowEvent::{self, KeyboardInput, RedrawRequested};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{Window, WindowId};
@@ -53,6 +54,23 @@ impl ApplicationHandler for App{
                     }
                     else {
                         println!("{:?}", key_event.logical_key);
+                    }
+                }
+            },
+            WindowEvent::RedrawRequested =>{
+                let window = self.window.as_ref();
+                let surface = self.surface.as_mut();
+                if let (Some(window), Some(surface)) = (window, surface){
+                    let size = window.inner_size();
+                    let (width, height) = (NonZeroU32::new(size.width), NonZeroU32::new(size.height));
+
+                    if let (Some(width), Some(height)) = (width, height){
+                        surface.resize(width, height).expect("line 68");
+                        let mut buffer = surface.buffer_mut().expect("line 69");
+                        for pixel in buffer.iter_mut(){
+                            *pixel = self.clear_color;  
+                        }
+                        buffer.present().expect("...");
                     }
                 }
             },
