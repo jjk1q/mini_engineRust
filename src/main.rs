@@ -4,7 +4,7 @@ use std::rc::Rc;
 use softbuffer::{Context, Surface};
 use winit::application::ApplicationHandler;
 use winit::event::ElementState;
-use winit::event::WindowEvent::{self, KeyboardInput, RedrawRequested};
+use winit::event::WindowEvent::{self};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{Key, KeyCode, NamedKey, PhysicalKey};
 use winit::window::{Window, WindowId};
@@ -16,6 +16,16 @@ fn main() {
     event_loop.run_app(&mut app).expect("еее бурмалда не запустить");
 
 
+}
+
+fn draw_rect(buffer: &mut [u32],buffer_width: usize, px: usize, py: usize, w: usize, h: usize, color: u32){
+
+    for y in py..py + h{
+        for x in px..px + w{
+            let index = y * buffer_width + x;
+            buffer[index] = color;
+        }
+    }
 }
 
 #[derive()]
@@ -77,6 +87,8 @@ impl ApplicationHandler for App{
                         for pixel in buffer.iter_mut(){
                             *pixel = self.clear_color;  
                         }
+
+                        draw_rect(&mut buffer,size.width as usize, 200, 500, 150, 150, 0x00E63946);
                         buffer.present().expect("..."); 
                     }
                 }
