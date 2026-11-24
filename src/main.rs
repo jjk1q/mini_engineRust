@@ -4,7 +4,7 @@ use std::rc::Rc;
 use softbuffer::{Context, Surface};
 use winit::application::ApplicationHandler;
 use winit::event::ElementState;
-use winit::event::WindowEvent::{self};
+use winit::event::WindowEvent;
 use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{Key, KeyCode, NamedKey, PhysicalKey};
 use winit::window::{Window, WindowId};
@@ -12,7 +12,10 @@ use winit::dpi::LogicalSize;
 
 fn main() {
     let event_loop = EventLoop::new().expect("не палучилась бурмалда");
-    let mut app = App {window: None, surface: None, clear_color: 0x00202030};
+
+    let rect = Rect { x: 100, y: 100, w: 100, h: 100 };
+    let player = Player{rect, color: 0x00FF8800, speed: 10};
+    let mut app = App {window: None, surface: None, clear_color: 0x00202030, player};
     event_loop.run_app(&mut app).expect("еее бурмалда не запустить");
 
 
@@ -29,11 +32,35 @@ fn draw_rect(buffer: &mut [u32],buffer_width: usize, px: usize, py: usize, w: us
     }
 }
 
-#[derive()]
+#[derive(Debug, Clone, Copy)]
+struct Rect{
+    x: i32,
+    y: i32,
+    w: u32,
+    h: u32
+}
+
+struct Player{
+    rect: Rect,
+    color: u32,
+    speed: i32
+}
+
 struct App{
     window: Option<Rc<Window>>,
     surface: Option<Surface<Rc<Window>, Rc<Window>>>,
-    clear_color: u32
+    clear_color: u32,
+    player: Player
+}
+
+impl Player{
+    fn move_by(&mut self, dx: i32, dy: i32, bounds_w: i32, bounds_h: i32){
+        let max_x = (bounds_w - self.rect.w as i32).max(0);
+        self.rect.x = (self.rect.x + dx).clamp(0, max_x);
+
+        let max_y = (bounds_h - self.rect.h as i32).max(0);
+        self.rect.y = (self.rect.y + dy).clamp(0, max_y);
+    }
 }
 
 
@@ -70,9 +97,7 @@ impl ApplicationHandler for App{
                             window.request_redraw();
                         }
                     }
-                    else {
-                        println!("{:?}", key_event.logical_key);
-                    }
+                    
                 }
             },
             WindowEvent::RedrawRequested =>{
@@ -90,7 +115,6 @@ impl ApplicationHandler for App{
                         }
 
                         draw_rect(&mut buffer,size.width as usize, 500, 680, 100, 100, 0x00E63946);
-                        println!("{} x {}", size.width, size.height);
                         buffer.present().expect("..."); 
                     }
                 }
