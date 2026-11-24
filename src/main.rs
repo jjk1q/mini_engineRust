@@ -20,8 +20,9 @@ fn main() {
 
 fn draw_rect(buffer: &mut [u32],buffer_width: usize, px: usize, py: usize, w: usize, h: usize, color: u32){
 
-    for y in py..py + h{
-        for x in px..px + w{
+    let buffer_height = buffer.len() / buffer_width;
+    for y in py..(py + h).min(buffer_height){
+        for x in px..(px + w).min(buffer_width){
             let index = y * buffer_width + x;
             buffer[index] = color;
         }
@@ -88,7 +89,8 @@ impl ApplicationHandler for App{
                             *pixel = self.clear_color;  
                         }
 
-                        draw_rect(&mut buffer,size.width as usize, 200, 500, 150, 150, 0x00E63946);
+                        draw_rect(&mut buffer,size.width as usize, 500, 680, 100, 100, 0x00E63946);
+                        println!("{} x {}", size.width, size.height);
                         buffer.present().expect("..."); 
                     }
                 }
