@@ -26,6 +26,9 @@ fn main() {
             frames: 0,
             started: Instant::now()
         },
+        clock: Clock{
+            last: Instant::now()
+        },
     };
 
    
@@ -52,12 +55,26 @@ struct App{
     surface: Option<Surface<Rc<Window>, Rc<Window>>>,
     clear_color: u32,
     player: Player,
-    fps: FpsCounter
+    fps: FpsCounter,
+    clock: Clock
 }
 
 struct FpsCounter{
     frames: u32,
     started: Instant
+}
+
+struct Clock{
+    last: Instant
+}
+
+impl Clock{
+    fn delta(&mut self) -> f32{
+        let now = Instant::now();
+        let diff = now - self.last;
+        self.last = now;
+        diff.as_secs_f32()
+    }
 }
 
 impl FpsCounter{
@@ -162,6 +179,7 @@ impl ApplicationHandler for App{
                 }
             },
             WindowEvent::RedrawRequested =>{
+                let dt = self.clock.delta();
                 let window = self.window.as_ref();
                 let surface = self.surface.as_mut();
                 if let (Some(window), Some(surface)) = (window, surface){
@@ -182,7 +200,9 @@ impl ApplicationHandler for App{
                         let fps = self.fps.tick();
                         if let Some(fps) = fps{
                             println!("{}", fps);
+                            println!("{}", dt);
                         }
+                        
                         window.request_redraw();
                     }
                 }
