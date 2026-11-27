@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::num::NonZeroU32;
 use std::rc::Rc;
 
@@ -6,7 +7,7 @@ use winit::application::ApplicationHandler;
 use winit::event::ElementState;
 use winit::event::WindowEvent::{self};
 use winit::event_loop::{ActiveEventLoop, EventLoop};
-use winit::keyboard::{ KeyCode, PhysicalKey};
+use winit::keyboard::{ Key, KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 use winit::dpi::LogicalSize;
 use std::time::{Duration, Instant};
@@ -29,6 +30,7 @@ fn main() {
         clock: Clock{
             last: Instant::now()
         },
+        input: Input { held: HashSet::new()  }
     };
 
    
@@ -56,7 +58,8 @@ struct App{
     clear_color: u32,
     player: Player,
     fps: FpsCounter,
-    clock: Clock
+    clock: Clock,
+    input: Input
 }
 
 struct FpsCounter{
@@ -66,6 +69,24 @@ struct FpsCounter{
 
 struct Clock{
     last: Instant
+}
+
+struct Input{
+    held: HashSet<KeyCode>
+}
+
+impl Input{
+    fn press(&mut self, code: KeyCode){
+        self.held.insert(code);
+    }
+
+    fn release(&mut self, code: KeyCode){
+        self.held.remove(&code);
+    }
+
+    fn is_held(&self, code: KeyCode) -> bool{
+        self.held.contains(&code)
+    }
 }
 
 impl Clock{
@@ -148,35 +169,25 @@ impl ApplicationHandler for App{
         match event{
             WindowEvent::CloseRequested => event_loop.exit(),
             WindowEvent::KeyboardInput{event: key_event, ..} => {
-                if key_event.state == ElementState::Pressed{
-                    let Some(window) = self.window.as_ref() else {return;};
-                    let size = window.inner_size();
-                    let (bounds_w, bounds_h) = (size.width as i32, size.height as i32) ;
-                    
-                    match key_event.physical_key{
-                        PhysicalKey::Code(KeyCode::Escape) => {
-                            event_loop.exit();
-                        },
-                        PhysicalKey::Code(KeyCode::KeyC) => {
-                            self.clear_color = rand::random::<u32>() & 0x00FFFFFF;
+                if let PhysicalKey::Code(code) = key_event.physical_key{
+                    match key_event.state{
+                        ElementState::Pressed => {
+                            self.input.press(code);
+                            match code{
+                                KeyCode::Escape => event_loop.exit(),
+                                KeyCode::KeyC => {
+                                    self.clear_color = rand::random::<u32>() & 0x00FFFFFF;
+                                }
+                                _ => {}
+                            }
                         }
-                        PhysicalKey::Code(KeyCode::ArrowUp) => {
-                            self.player.move_by(0, -self.player.speed, bounds_w, bounds_h);
-                        },
-                        PhysicalKey::Code(KeyCode::ArrowDown) => {
-                            self.player.move_by(0, self.player.speed, bounds_w, bounds_h);
-                        },
-                        PhysicalKey::Code(KeyCode::ArrowLeft) => {
-                            self.player.move_by(-self.player.speed,0 , bounds_w, bounds_h);
-                        },
-                        PhysicalKey::Code(KeyCode::ArrowRight) => {
-                            self.player.move_by(self.player.speed,0, bounds_w, bounds_h);
-                        },
-                        _ => println!("line 121")
+                        ElementState::Released => {
+                            self.input.release(code);
+                        }
                     }
-                    self.redraw();
-                    
                 }
+                println!("{:?}", self.input.held);
+                self.redraw();
             },
             WindowEvent::RedrawRequested =>{
                 let dt = self.clock.delta();
