@@ -9,6 +9,7 @@ use winit::event_loop::{ActiveEventLoop, EventLoop};
 use winit::keyboard::{ KeyCode, PhysicalKey};
 use winit::window::{Window, WindowId};
 use winit::dpi::LogicalSize;
+use std::time::{Duration, Instant};
 
 fn main() {
     let event_loop = EventLoop::new().expect("не палучилась бурмалда");
@@ -17,11 +18,17 @@ fn main() {
         surface: None,
         clear_color: 0x00202030,
         player: Player {
-            rect: Rect { x: 100п, y: 100, w: 100, h: 100 },
+            rect: Rect { x: 100, y: 100, w: 100, h: 100 },
             color: 0x00FF8800,
             speed: 10,
         },
+        fps: FpsCounter { 
+            frames: 0,
+            started: Instant::now()
+        },
     };
+
+   
     event_loop.run_app(&mut app).expect("еее бурмалда не запустить");
 }
 
@@ -37,6 +44,33 @@ struct Player {
     rect: Rect,
     color: u32,
     speed: i32,
+}
+
+#[derive()]
+struct App{
+    window: Option<Rc<Window>>,
+    surface: Option<Surface<Rc<Window>, Rc<Window>>>,
+    clear_color: u32,
+    player: Player,
+    fps: FpsCounter
+}
+
+struct FpsCounter{
+    frames: u32,
+    started: Instant
+}
+
+impl FpsCounter{
+    fn tick(&mut self) -> Option<u32>{
+        self.frames += 1;
+        if self.started.elapsed() >= Duration::from_secs(1){
+            let fps = self.frames;
+            self.frames = 0;
+            self.started = Instant::now();
+            return Some(fps);
+        }
+        None
+    }
 }
 
 impl Player {
@@ -63,14 +97,6 @@ fn draw_rect(buffer: &mut [u32], buffer_w: usize, buffer_h: usize, rect: &Rect, 
             buffer[index] = color;
         }
     }
-}
-
-#[derive()]
-struct App{
-    window: Option<Rc<Window>>,
-    surface: Option<Surface<Rc<Window>, Rc<Window>>>,
-    clear_color: u32,
-    player: Player,
 }
 
 impl App{
@@ -150,8 +176,14 @@ impl ApplicationHandler for App{
                         }
                         
                         draw_rect(&mut buffer, size.width as usize, size.height as usize, &self.player.rect, self.player.color);
-
+                        
                         buffer.present().expect("line 131");
+
+                        let fps = self.fps.tick();
+                        if let Some(fps) = fps{
+                            println!("{}", fps);
+                        }
+                        window.request_redraw();
                     }
                 }
             },
