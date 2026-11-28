@@ -19,9 +19,14 @@ fn main() {
         surface: None,
         clear_color: 0x00202030,
         player: Player {
-            rect: Rect { x: 100, y: 100, w: 100, h: 100 },
+            pos: Vec2 {
+                x: 200.0,
+                y: 200.0
+            },
+            w: 100,
+            h: 100,
             color: 0x00FF8800,
-            speed: 10,
+            speed: 60.0,
         },
         fps: FpsCounter { 
             frames: 0,
@@ -46,9 +51,11 @@ struct Rect {
 }
 
 struct Player {
-    rect: Rect,
+    pos: Vec2,
+    w: u32,
+    h: u32,
     color: u32,
-    speed: i32,
+    speed: f32,
 }
 
 #[derive()]
@@ -73,6 +80,11 @@ struct Clock{
 
 struct Input{
     held: HashSet<KeyCode>
+}
+
+struct Vec2{
+    x: f32,
+    y: f32
 }
 
 impl Input{
@@ -112,12 +124,16 @@ impl FpsCounter{
 }
 
 impl Player {
-    fn move_by(&mut self, dx: i32, dy: i32, bounds_w: i32, bounds_h: i32) {
-        let max_x = (bounds_w - self.rect.w as i32).max(0);
-        let max_y = (bounds_h - self.rect.h as i32).max(0);
+    fn move_by(&mut self, dx: f32, dy: f32, bounds_w: f32, bounds_h: f32) {
+        let max_x = (bounds_w - self.w as f32).max(0.0);
+        let max_y = (bounds_h - self.h as f32).max(0.0);
 
-        self.rect.x = (self.rect.x + dx).clamp(0, max_x);
-        self.rect.y = (self.rect.y + dy).clamp(0, max_y);
+        self.pos.x = (self.pos.x + dx).clamp(0.0, max_x);
+        self.pos.y = (self.pos.y + dy).clamp(0.0, max_y);
+    }
+
+    fn rect(&self) -> Rect{
+        Rect {x: self.pos.x as i32,y: self.pos.y as i32, w: self.w, h: self.h }
     }
 }
 
@@ -143,6 +159,24 @@ impl App{
         if let Some(window) = window{
             window.request_redraw();    
         }
+    }
+
+    fn update(&mut self, dt: f32){
+        let mut dx = 0.0;
+        let mut dy = 0.0;
+
+        if self.input.is_held(KeyCode::ArrowUp) { dy += -1.0; }
+        if self.input.is_held(KeyCode::ArrowDown) { dy += 1.0 }
+        if self.input.is_held(KeyCode::ArrowLeft) { dx += -1.0 }
+        if self.input.is_held(KeyCode::ArrowRight) { dx += 1.0 }
+
+        let Some(window) = self.window.as_ref() else { return;};
+        let size = window.inner_size();
+        let bounds_w = size.width as f32;
+        let bounds_h = size.height as f32;
+
+        self.player.move_by(dx * self.player.speed * dt, dy * self.player.speed * dt, bounds_w, bounds_h);
+
     }
 }
 
@@ -191,6 +225,7 @@ impl ApplicationHandler for App{
             },
             WindowEvent::RedrawRequested =>{
                 let dt = self.clock.delta();
+                self.update(dt);
                 let window = self.window.as_ref();
                 let surface = self.surface.as_mut();
                 if let (Some(window), Some(surface)) = (window, surface){
@@ -204,7 +239,7 @@ impl ApplicationHandler for App{
                             *pixel = self.clear_color;
                         }
                         
-                        draw_rect(&mut buffer, size.width as usize, size.height as usize, &self.player.rect, self.player.color);
+                        draw_rect(&mut buffer, size.width as usize, size.height as usize, &self.player.rect(), self.player.color);
                         
                         buffer.present().expect("line 131");
 
