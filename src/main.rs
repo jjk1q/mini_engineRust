@@ -82,9 +82,26 @@ struct Input{
     held: HashSet<KeyCode>
 }
 
+#[derive(Debug, Clone, Copy)]
 struct Vec2{
     x: f32,
     y: f32
+}
+
+impl Vec2{
+    
+    fn length(&self) -> f32{
+        (self.x * self.x + self.y * self.y).sqrt()
+    }
+
+    fn normalized(&self) -> Vec2{
+        let len = self.length();
+        if len == 0.0{ 
+            return *self;
+        }
+        let (x, y) = (self.x / len, self.y / len);
+        Vec2{x, y}
+    }
 }
 
 impl Input{
@@ -162,20 +179,21 @@ impl App{
     }
 
     fn update(&mut self, dt: f32){
-        let mut dx = 0.0;
-        let mut dy = 0.0;
+        let mut direction = Vec2 {x: 0.0, y: 0.0};
 
-        if self.input.is_held(KeyCode::ArrowUp) { dy += -1.0; }
-        if self.input.is_held(KeyCode::ArrowDown) { dy += 1.0 }
-        if self.input.is_held(KeyCode::ArrowLeft) { dx += -1.0 }
-        if self.input.is_held(KeyCode::ArrowRight) { dx += 1.0 }
+        if self.input.is_held(KeyCode::ArrowUp) { direction.y += -1.0; }
+        if self.input.is_held(KeyCode::ArrowDown) { direction.y += 1.0 }
+        if self.input.is_held(KeyCode::ArrowLeft) { direction.x += -1.0 }
+        if self.input.is_held(KeyCode::ArrowRight) { direction.x += 1.0 }
+
+        direction = direction.normalized();
 
         let Some(window) = self.window.as_ref() else { return;};
         let size = window.inner_size();
         let bounds_w = size.width as f32;
         let bounds_h = size.height as f32;
 
-        self.player.move_by(dx * self.player.speed * dt, dy * self.player.speed * dt, bounds_w, bounds_h);
+        self.player.move_by(direction.x * self.player.speed * dt, direction.y * self.player.speed * dt, bounds_w, bounds_h);
 
     }
 }
